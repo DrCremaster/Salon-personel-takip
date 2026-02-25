@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Management Pro v3</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    <style>
+        :root { --primary: #00d4ff; --bg: #0b0f19; --card: #161b2a; --text: #f8fafc; --accent: #3b82f6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; align-items: flex-start; }
+        
+        /* Sabit Kapsayıcı */
+        .container { width: 100%; max-width: 800px; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #2d3748; margin-top: 20px; min-height: 400px; position: relative; }
+        
+        /* Sabit Başlık */
+        .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #2d3748; }
+        .header h2 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; }
+        
+        .hidden { display: none; }
+        .active { display: block; animation: fadeSlide 0.4s ease; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        
+        /* Form Elemanları */
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #2d3748; background: #0b0f19; color: white; font-size: 15px; box-sizing: border-box; transition: 0.3s; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px rgba(0, 212, 255, 0.2); }
+        button { background: var(--primary); color: #000; font-weight: 800; cursor: pointer; border: none; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .back-btn { background: transparent; color: #94a3b8; border: 1px solid #2d3748; }
+
+        /* Canlı Önizleme Kutusu */
+        .live-preview { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); padding: 12px; border-radius: 10px; text-align: center; color: var(--primary); font-weight: bold; margin: 10px 0; }
+
+        /* Toast Bildirim */
+        #toast { position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; transition: bottom 0.4s ease; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #toast.show { bottom: 20px; }
+        #toast.error { background: #ef4444; }
+
+        /* Takvim */
+        #calendar { background: #161b2a; padding: 15px; border-radius: 15px; margin: 20px 0; font-size: 13px; }
+        .analysis-card { background: #1e293b; padding: 20px; border-radius: 15px; margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; border: 1px solid var(--accent); }
+        .stat-box { text-align: center; }
+        .stat-box small { color: #94a3b8; display: block; margin-bottom: 5px; }
+        .stat-box span { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>🏋️ GYM MANAGEMENT</h2>
+        <small id="subText" style="color:#94a3b8;">Sisteme Hoş Geldiniz</small>
+    </div>
+
+    <div id="mainUI" class="step active">
+        <button onclick="nav('staffLogin', 'Personel Girişi')">PERSONEL GİRİŞİ</button>
+        <button class="back-btn" onclick="nav('bossLogin', 'Yönetici Paneli')">PATRON PANELİ</button>
+    </div>
+
+    <div id="staffLogin" class="step hidden">
+        <select id="sName"><option>Ahmet</option><option>Mehmet</option><option>Ayşe</option></select>
+        <input type="password" id="sPass" placeholder="Şifreniz">
+        <button onclick="authStaff()">Doğrula</button>
+        <button class="back-btn" onclick="nav('mainUI', 'Sisteme Hoş Geldiniz')">İptal</button>
+    </div>
+
+    <div id="staffForm" class="step hidden">
+        <input type="text" id="dateSelect" placeholder="Tarih Seçin (Otomatik Bugün)">
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="tIn" class="tp" placeholder="Giriş Saati"
+            <input type="text" id="tOut" class="tp" placeholder="Çıkış Saati">
+        </div>
+        <input type="number" id="molaDk" placeholder="Spor süresi (Dakika)">
+        <input type="number" id="borcDk" placeholder="Borç (TL)">
+        
+        <div class="live-preview" id="liveNet">Hesaplanıyor...</div>
+
+        <button id="saveBtn" onclick="submitData()">MESAİYİ KAYDET</button>
+        <button class="back-btn" onclick="nav('mainUI', 'Sisteme Hoş Geldiniz')">Güvenli Çıkış</button>
+    </div>
+
+    <div id="bossLogin" class="step hidden">
+        <input type="text" id="bUser" placeholder="Kullanıcı Adı">
+        <input type="password" id="bPass" placeholder="Şifre">
+        <button onclick="authBoss()">Giriş Yap</button>
+        <button class="back-btn" onclick="nav('mainUI', 'Sisteme Hoş Geldiniz')">İptal</button>
+    </div>
+
+    <div id="bossDashboard" class="step hidden">
+        <div id="calendar"></div>
+        <div class="analysis-card">
+            <div class="stat-box"><small>Seçili Aralık (Brüt)</small><span id="statBrut">0s</span></div>
+            <div class="stat-box"><small>Seçili Aralık (Net)</small><span id="statNet">0s</span></div>
+            <div class="stat-box"><small>Toplam Borç</small><span id="statBorc">0 TL</span></div>
+            <div class="stat-box"><small>Net Ödenecek</small><span id="statMaas" style="color:#10b981">0 TL</span></div>
+        </div>
+        <button class="back-btn" onclick="location.reload()" style="margin-top:20px;">Sistemi Kapat</button>
+    </div>
+</div>
+
+<div id="toast">İşlem Başarılı!</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/nzggrzkn4881m";
+    const STAFF_DATA = {"Ahmet": {pass:"1111", color:"#00d4ff"}, "Mehmet": {pass:"2222", color:"#a855f7"}, "Ayşe": {pass:"3333", color:"#ec4899"}};
+    const BOSS_CREDS = {u: "admin", p: "gym2026"};
+    const HOURLY_WAGE = 180;
+
+    // Takvim ve Saat Ayarları (disableMobile: true ile yuvarlak saat engellendi)
+    flatpickr("#dateSelect", { locale: "tr", dateFormat: "d.m.Y", defaultDate: "today", disableMobile: true });
+    flatpickr(".tp", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, disableMobile: true, allowInput: true });
+
+    // Toast Bildirim Fonksiyonu
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.className = type === 'error' ? 'error show' : 'show';
+        setTimeout(() => toast.className = toast.className.replace('show', ''), 3000);
+    }
+
+    // Ekran Geçişleri (Başlık kaymadan)
+    function nav(id, subText = "") {
+        document.querySelectorAll('.step').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        if(subText) document.getElementById('subText').innerText = subText;
+    }
+
+    function authStaff() {
+        const n = document.getElementById('sName').value;
+        if(STAFF_DATA[n]?.pass === document.getElementById('sPass').value) {
+            document.getElementById('sPass').value = ''; // Şifreyi temizle
+            nav('staffForm', `Aktif Personel: ${n}`);
+        } else showToast("Hatalı Şifre!", "error");
+    }
+
+    // Canlı Net Süre Hesaplama
+    document.querySelectorAll('#tIn, #tOut, #molaDk').forEach(input => {
+        input.addEventListener('input', () => {
+            const inT = document.getElementById('tIn').value;
+            const outT = document.getElementById('tOut').value;
+            const mola = document.getElementById('molaDk').value || 0;
+            if(inT && outT) {
+                let diff = (new Date("2000-01-01 " + outT) - new Date("2000-01-01 " + inT)) / 3600000;
+                if (diff < 0) diff += 24; // Gece geçişi
+                const net = (diff - (mola/60)).toFixed(2);
+                document.getElementById('liveNet').innerText = net > 0 ? `Net Mesai: ${net} Saat` : "Hatalı Saat Girişi";
+            }
+        });
+    });
+
+    async function submitData() {
+        const inT = document.getElementById('tIn').value;
+        const outT = document.getElementById('tOut').value;
+        if(!inT || !outT) return showToast("Saatleri eksiksiz girin!", "error");
+
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "Kaydediliyor...";
+        btn.disabled = true;
+
+        const m = document.getElementById('molaDk').value || 0;
+        let diff = (new Date("2000-01-01 " + outT) - new Date("2000-01-01 " + inT)) / 3600000;
+        if (diff < 0) diff += 24;
+        const net = (diff - (m/60)).toFixed(2);
+
+        const data = {
+            "Tarih": document.getElementById('dateSelect').value,
+            "Isim": document.getElementById('sName').value,
+            "BrutSure": diff.toFixed(2),
+            "NetSure": net,
+            "Borc": document.getElementById('borcDk').value || 0
+        };
+
+        try {
+            await fetch(SHEETDB_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({data: [data]}) });
+            showToast("Mesai Başarıyla Kaydedildi!");
+            setTimeout(() => location.reload(), 1500);
+        } catch {
+            showToast("Bağlantı Hatası!", "error");
+            btn.innerText = "MESAİYİ KAYDET";
+            btn.disabled = false;
+        }
+    }
+
+    async function authBoss() {
+        if(document.getElementById('bUser').value === BOSS_CREDS.u && document.getElementById('bPass').value === BOSS_CREDS.p) {
+            nav('bossDashboard', 'Yönetim Takvimi');
+            renderCalendar();
+        } else showToast("Yetkisiz Giriş!", "error");
+    }
+
+    async function renderCalendar() {
+        const res = await fetch(SHEETDB_URL);
+        const allData = await res.json();
+        
+        const events = allData.map(d => {
+            if(!d.Tarih) return null;
+            const [day, month, year] = d.Tarih.split('.');
+            return {
+                title: `${d.Isim}: ${d.NetSure}s`,
+                start: `${year}-${month}-${day}`,
+                color: STAFF_DATA[d.Isim]?.color || '#555',
+                extendedProps: { brut: d.BrutSure, net: d.NetSure, borc: d.Borc, isim: d.Isim }
+            };
+        }).filter(Boolean); // Boş satırları temizle
+
+        const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth',
+            events: events,
+            selectable: true,
+            locale: 'tr',
+            headerToolbar: { left: 'prev,next', center: 'title', right: 'today' },
+            select: function(info) { calculateAnalysis(allData, info.startStr, info.endStr); }
+        });
+        calendar.render();
+    }
+
+    function calculateAnalysis(data, start, end) {
+        let tBrut = 0, tNet = 0, tBorc = 0;
+        data.forEach(d => {
+            if(!d.Tarih) return;
+            const [day, month, year] = d.Tarih.split('.');
+            const dDate = new Date(`${year}-${month}-${day}`);
+            
+            if(dDate >= new Date(start) && dDate < new Date(end)) {
+                tBrut += parseFloat(d.BrutSure) || 0;
+                tNet += parseFloat(d.NetSure) || 0;
+                tBorc += parseFloat(d.Borc) || 0;
+            }
+        });
+
+        document.getElementById('statBrut').innerText = tBrut.toFixed(1) + "s";
+        document.getElementById('statNet').innerText = tNet.toFixed(1) + "s";
+        document.getElementById('statBorc').innerText = tBorc + " TL";
+        document.getElementById('statMaas').innerText = ((tNet * HOURLY_WAGE) - tBorc).toFixed(0) + " TL";
+    }
+</script>
+</body>
+</html>
