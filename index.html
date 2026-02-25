@@ -3,37 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Management Pro v3</title>
+    <title>Gym Pro v7 - Esnek Takip</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
     <style>
         :root { --primary: #00d4ff; --bg: #0b0f19; --card: #161b2a; --text: #f8fafc; --accent: #3b82f6; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; align-items: flex-start; }
-        
-        /* Sabit Kapsayıcı */
-        .container { width: 100%; max-width: 800px; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #2d3748; margin-top: 20px; min-height: 400px; position: relative; }
-        
-        /* Sabit Başlık */
-        .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #2d3748; }
-        .header h2 { color: var(--primary); margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px; }
-        
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 900px; background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #2d3748; margin-top: 10px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #2d3748; padding-bottom: 10px; }
+        .header h2 { color: var(--primary); margin: 0; font-size: 22px; text-transform: uppercase; }
         .hidden { display: none; }
-        .active { display: block; animation: fadeSlide 0.4s ease; }
-        @keyframes fadeSlide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        
-        /* Form Elemanları */
-        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #2d3748; background: #0b0f19; color: white; font-size: 15px; box-sizing: border-box; transition: 0.3s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px rgba(0, 212, 255, 0.2); }
-        button { background: var(--primary); color: #000; font-weight: 800; cursor: pointer; border: none; }
-        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .active { display: block; animation: fadeIn 0.3s ease; }
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #2d3748; background: #0b0f19; color: white; font-size: 15px; box-sizing: border-box; }
+        button { background: var(--primary); color: #000; font-weight: 800; border: none; cursor: pointer; }
+        .auto-btn { background: #3b82f6; color: white; margin-bottom: 15px; }
         .back-btn { background: transparent; color: #94a3b8; border: 1px solid #2d3748; }
+        .analysis-card { background: #1e293b; padding: 15px; border-radius: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .stat-box { text-align: center; }
+        .stat-box span { font-size: 1.1rem; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
 
-        /* Canlı Önizleme Kutusu */
-        .live-preview { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); padding: 12px; border-radius: 10px; text-align: center; color: var(--primary); font-weight: bold; margin: 10px 0; }
+<div class="container">
+    <div class="header">
+        <h2>🏋️ GYM MANAGEMENT</h2>
+        <small id="subText" style="color:#94a3b8;">Esnek Mesai Takip Sistemi</small>
+    </div>
 
-        /* Toast Bildirim */
-        #toast { position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; transition: bottom 0.4s ease; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    <div id="mainUI" class="step active">
+        <button onclick="nav('staffLogin', 'Personel Girişi')">PERSONEL GİRİŞİ</button>
+        <button class="back-btn" onclick="nav('bossLogin', 'Yönetici Girişi')">PATRON PANELİ</button>
+    </div>
+
+    <div id="staffLogin" class="step hidden">
+        <select id="sName">
+            <option value="" disabled selected>Personel Seçiniz...</option>
+            <option>Ahmet</option><option>Mehmet</option><option>Ayşe</option>
+        </select>
+        <input type="password" id="sPass" placeholder="Şifreniz">
+        <button onclick="authStaff()">Giriş Yap</button>
+        <button class="back-btn" onclick="nav('mainUI', 'Hoş Geldiniz')">Geri</button>
+    </div>
+
+    <div id="staffForm" class="step hidden">
+        <input type="text" id="dateSelect" placeholder="Tarih Seçin">
+        
+        <button class="auto-btn" onclick="setNow()">Şu Anki Saati Al (Giriş/Çıkış)</button>
+        
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="tIn" class="tp" placeholder="Giriş Saati">
+            <input type="text" id="tOut" class="tp" placeholder="Çıkış Saati">
+        </div>
+
+        <input type="number" id="molaDk" placeholder="Mola (Dakika)">
+        
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="borcAck" placeholder="Borç Nedeni">
+            <input type="number" id="borcFiyat" placeholder="Tutar (TL)">
+        </div>
+
+        <button id="saveBtn" onclick="submitData()">KAYDI TAMAMLA</button>
+        <button class="back-btn" onclick="location.reload()">Çıkış</button>
+    </div>
+
+    <div id="bossLogin" class="step hidden">
+        <input type="text" id="bUser" placeholder="Yönetici">
+        <input type="password" id="bPass" placeholder="Şifre">
+        <button onclick="authBoss()">Giriş</button>
+    </div>
+
+    <div id="bossDashboard" class="step hidden">
+        <select id="bossStaffFilter" onchange="filterCalendar()">
+            <option value="HEPSİ">Tüm Personel</option>
+            <option>Ahmet</option><option>Mehmet</option><option>Ayşe</option>
+        </select>
+        <div id="calendar"></div>
+        <div class="analysis-card">
+            <div class="stat-box"><small>Net Süre</small><span id="statNet">0s</span></div>
+            <div class="stat-box"><small>Borçlar</small><span id="statBorc">0 TL</span></div>
+            <div class="stat-box"><small>Maaş</small><span id="statMaas" style="color:#10b981">0 TL</span></div>
+        </div>
+        <button class="back-btn" onclick="location.reload()" style="margin-top:15px;">Kapat</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/nzggrzkn4881m";
+    const STAFF_DATA = {"Ahmet": "1111", "Mehmet": "2222", "Ayşe": "3333"};
+    const BOSS_CREDS = {u: "admin", p: "gym2026"};
+    const HOURLY_WAGE = 180;
+    let allGlobalData = [];
+
+    // Saat ayarı: Hem manuel yazılabilir hem de butona basınca otomatik dolar
+    const fpConfig = { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, disableMobile: true, allowInput: true };
+    flatpickr("#dateSelect", { locale: "tr", dateFormat: "d.m.Y", defaultDate: "today", disableMobile: true });
+    flatpickr(".tp", fpConfig);
+
+    function nav(id, text) {
+        document.querySelectorAll('.step').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        if(text) document.getElementById('subText').innerText = text;
+    }
+
+    function authStaff() {
+        const n = document.getElementById('sName').value;
+        if(STAFF_DATA[n] === document.getElementById('sPass').value) nav('staffForm', `Hoş geldin, ${n}`);
+        else alert("Şifre Yanlış!");
+    }
+
+    function setNow() {
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        const inField = document.getElementById('tIn');
+        const outField = document.getElementById('tOut');
+        
+        if(!inField.value) inField.value = time;
+        else outField.value = time;
+    }
+
+    async function submitData() {
+        const inT = document.getElementById('tIn').value;
+        const outT = document.getElementById('tOut').value;
+        if(!inT || !outT) return alert("Saatleri girin!");
+
+        let diff = (new Date("2000-01-01 " + outT) - new Date("2000-01-01 " + inT)) / 3600000;
+        if (diff < 0) diff += 24;
+        const net = (diff - (document.getElementById('molaDk').value || 0)/60).toFixed(2);
+
+        const data = {
+            "Tarih": document.getElementById('dateSelect').value,
+            "Isim": document.getElementById('sName').value,
+            "BrutSure": diff.toFixed(2),
+            "NetSure": net,
+            "BorcAçıklama": document.getElementById('borcAck').value || "-",
+            "BorcTutar": document.getElementById('borcFiyat').value || 0
+        };
+
+        await fetch(SHEETDB_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({data: [data]}) });
+        alert("Mesai Kaydedildi!");
+        location.reload();
+    }
+
+    // Patron Dashboard Fonksiyonları
+    async function authBoss() {
+        if(document.getElementById('bUser').value === BOSS_CREDS.u && document.getElementById('bPass').value === BOSS_CREDS.p) {
+            nav('bossDashboard', 'Yönetici Paneli');
+            const res = await fetch(SHEETDB_URL);
+            allGlobalData = await res.json();
+            initCalendar();
+        } else alert("Hata!");
+    }
+
+    function initCalendar() {
+        const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth', locale: 'tr', selectable: true,
+            select: info => calculateAnalysis(info.startStr, info.endStr)
+        });
+        calendar.render();
+    }
+
+    function calculateAnalysis(start, end) {
+        let n = 0, br = 0;
+        const filter = document.getElementById('bossStaffFilter').value;
+        allGlobalData.forEach(d => {
+            if(!d.Tarih) return;
+            const [dd, mm, yy] = d.Tarih.split('.');
+            const dDate = new Date(`${yy}-${mm}-${dd}`);
+            if(dDate >= new Date(start) && dDate < new Date(end) && (filter === "HEPSİ" || d.Isim === filter)) {
+                n += parseFloat(d.NetSure) || 0;
+                br += parseFloat(d.BorcTutar) || 0;
+            }
+        });
+        document.getElementById('statNet').innerText = n.toFixed(1) + "s";
+        document.getElementById('statBorc').innerText = br + " TL";
+        document.getElementById('statMaas').innerText = ((n * HOURLY_WAGE) - br).toFixed(0) + " TL";
+    }
+</script>
+</body>
+</html>
         #toast.show { bottom: 20px; }
         #toast.error { background: #ef4444; }
 
